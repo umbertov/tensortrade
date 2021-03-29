@@ -45,7 +45,8 @@ def _create_wallet_source(wallet: 'Wallet', include_worth: bool = True) -> 'List
 
         if include_worth:
             price = Stream.select(wallet.exchange.streams(), lambda node: node.name.endswith(symbol))
-            worth = price.mul(total_balance).rename('worth')
+            # worth = price.mul(total_balance).rename('worth')
+            worth = (price * total_balance).rename('worth')
             streams += [worth]
 
     return streams
@@ -332,7 +333,7 @@ class IntradayObserver(Observer):
                  portfolio: 'Portfolio',
                  feed: 'DataFeed' = None,
                  renderer_feed: 'DataFeed' = None,
-                 stop_time: 'datetime.time' = dt.time(16, 0, 0),
+                 stop_time: 'datetime.time' = dt.time(23, 0, 0),
                  window_size: int = 1,
                  min_periods: int = None,
                  randomize: bool = False,
@@ -358,6 +359,8 @@ class IntradayObserver(Observer):
         self.window_size = window_size
         self.min_periods = min_periods
         self.randomize = randomize
+
+        self.stop = False
 
         self._observation_dtype = kwargs.get('dtype', np.float32)
         self._observation_lows = kwargs.get('observation_lows', -np.inf)
@@ -389,8 +392,6 @@ class IntradayObserver(Observer):
 
         self.feed.reset()
         self.warmup()
-
-        self.stop = False
 
     @property
     def observation_space(self) -> Space:
@@ -450,6 +451,7 @@ class IntradayObserver(Observer):
         """Resets the observer"""
         self.renderer_history = []
         self.history.reset()
+        self.stop = False
 
         if self.randomize or not self.feed.has_next():
           self.feed.reset()
@@ -461,5 +463,3 @@ class IntradayObserver(Observer):
                 episode_num += 1
 
         self.warmup()
-
-        self.stop = False
