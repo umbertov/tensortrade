@@ -340,7 +340,9 @@ class PlotlyTradingChart(BaseRenderer):
                  path: str = 'charts',
                  filename_prefix: str = 'chart_',
                  auto_open_html: bool = False,
-                 include_plotlyjs: Union[bool, str] = 'cdn') -> None:
+                 include_plotlyjs: Union[bool, str] = 'cdn',
+                 plot_dates = False,
+        ) -> None:
         super().__init__()
         self._height = height
         self._timestamp_format = timestamp_format
@@ -361,6 +363,7 @@ class PlotlyTradingChart(BaseRenderer):
         self._base_annotations = None
         self._last_trade_step = 0
         self._show_chart = display
+        self._plot_dates = plot_dates
 
     def _create_figure(self, performance_keys: dict) -> None:
         fig = make_subplots(
@@ -513,7 +516,7 @@ class PlotlyTradingChart(BaseRenderer):
             open=price_history['open'],
             high=price_history['high'],
             low=price_history['low'],
-            close=price_history['close']
+            close=price_history['close'],
         ))
         self.fig.layout.annotations += self._create_trade_annotations(trades, price_history)
 
@@ -522,7 +525,10 @@ class PlotlyTradingChart(BaseRenderer):
         for trace in self.fig.select_traces(row=3):
             trace.update({'y': performance[trace.name]})
 
-        self._net_worth_chart.update({'y': net_worth})
+        self._net_worth_chart.update({
+            'y': net_worth,
+            'x': price_history['date'] if self._plot_dates else None,
+        })
 
         if self._show_chart:
             self.fig.show()
